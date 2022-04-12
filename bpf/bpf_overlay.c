@@ -569,8 +569,17 @@ int to_overlay(struct __ctx_buff *ctx)
 	 * re this code block being before handle_nat_fwd().
 	 */
 	ret = wg_maybe_redirect_to_encrypt(ctx);
-	if (ret == CTX_ACT_REDIRECT)
+	if (ret == CTX_ACT_REDIRECT) {
+		struct bpf_tunnel_key key = {};
+		int ret1 = 0;
+
+		/* TODO(brb): kernel bug? */
+		ret1 = ctx_set_tunnel_key(ctx, &key, sizeof(key), 0);
+		if (IS_ERR(ret1))
+			return ret1;
+
 		return ret;
+	}
 	else if (IS_ERR(ret))
 		return send_drop_notify_error(ctx, 0, ret, CTX_ACT_DROP,
 					      METRIC_EGRESS);
