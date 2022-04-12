@@ -24,7 +24,7 @@ wg_maybe_redirect_to_encrypt(struct __ctx_buff *ctx)
 	struct iphdr *ip4;
 #endif
 
-	if (!proto && !validate_ethertype(ctx, &proto))
+	if (!validate_ethertype(ctx, &proto))
 		return DROP_UNSUPPORTED_L2;
 
 	switch (proto) {

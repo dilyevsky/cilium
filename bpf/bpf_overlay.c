@@ -38,6 +38,10 @@
 #include "lib/eps.h"
 #endif /* ENABLE_VTEP */
 
+#ifdef ENABLE_WIREGUARD
+#include "lib/wireguard.h"
+#endif
+
 #ifdef ENABLE_IPV6
 static __always_inline int handle_ipv6(struct __ctx_buff *ctx,
 				       __u32 *identity)
@@ -550,6 +554,27 @@ int to_overlay(struct __ctx_buff *ctx)
 		return CTX_ACT_DROP;
 	}
 #endif
+
+#ifdef ENABLE_WIREGUARD
+	/* Redirect the packet to the WireGuard tunnel device for encryption
+	 * if needed.
+	 *
+	 * A packet which previously was a subject to VXLAN/Geneve
+	 * encapsulation (e.g., pod2pod) is going to be encapsulated only once,
+	 * i.e., by the WireGuard tunnel netdev. This is so just to be
+	 * compatible with < the v1.12 model in which the pod2pod bypassed
+	 * VXLAN/Geneve encapsulation when WG was on.
+	 *
+	 * See bpf_host's "to-netdev" ENABLE_WIREGUARD section for more details
+	 * re this code block being before handle_nat_fwd().
+	 */
+	ret = wg_maybe_redirect_to_encrypt(ctx);
+	if (ret == CTX_ACT_REDIRECT)
+		return ret;
+	else if (IS_ERR(ret))
+		return send_drop_notify_error(ctx, 0, ret, CTX_ACT_DROP,
+					      METRIC_EGRESS);
+#endif /* ENABLE_WIREGUARD */
 
 #ifdef ENABLE_NODEPORT
 	if ((ctx->mark & MARK_MAGIC_SNAT_DONE) == MARK_MAGIC_SNAT_DONE) {
