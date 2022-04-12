@@ -1145,7 +1145,8 @@ out:
 	}
 #endif
 
-#ifdef ENABLE_WIREGUARD
+#if defined(ENABLE_WIREGUARD)
+	if (NATIVE_DEV_IFINDEX != WG_IFINDEX) {
 	/* Redirect the packet to the WireGuard tunnel device for encryption
 	 * if needed.
 	 * We assume that a packet, which is a subject to the encryption, is
@@ -1162,6 +1163,7 @@ out:
 	else if (IS_ERR(ret))
 		return send_drop_notify_error(ctx, src_id, ret, CTX_ACT_DROP,
 					      METRIC_EGRESS);
+	}
 #endif /* ENABLE_WIREGUARD */
 
 #if defined(ENABLE_NODEPORT) && \

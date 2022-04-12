@@ -85,6 +85,7 @@ import (
 	"github.com/cilium/cilium/pkg/status"
 	"github.com/cilium/cilium/pkg/trigger"
 	wg "github.com/cilium/cilium/pkg/wireguard/agent"
+	wgTypes "github.com/cilium/cilium/pkg/wireguard/types"
 	cnitypes "github.com/cilium/cilium/plugins/cilium-cni/types"
 )
 
@@ -789,6 +790,12 @@ func NewDaemon(ctx context.Context, cancel context.CancelFunc, epMgr *endpointma
 		log.WithError(err).Warn("failed to detect devices, disabling BPF NodePort")
 		disableNodePort()
 	}
+
+	// TODO(brb): explain this hack
+	if option.Config.EnableNodePort && option.Config.EnableWireguard && option.Config.EncryptNode {
+		option.Config.Devices = append(option.Config.Devices, wgTypes.IfaceName)
+	}
+
 	if err := finishKubeProxyReplacementInit(isKubeProxyReplacementStrict); err != nil {
 		return nil, nil, fmt.Errorf("failed to finalise LB initialization: %w", err)
 	}
